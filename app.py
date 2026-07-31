@@ -190,12 +190,27 @@ if prompt:
             st.session_state.processing_error = "Please attach a CV before asking a question."
         else:
             st.session_state.messages.append({"role": "user", "content": question_text})
-            try:
-                with st.spinner("Thinking..."):
-                    response = st.session_state.qa_chain.invoke({"input": question_text})
-                    answer = response.get("answer", "I couldn't find an answer to that.")
-            except Exception as e:
-                answer = f"Something went wrong while answering: {e}"
+            with st.chat_message("user"):
+                st.write(question_text)
+ 
+            def stream_rag_answer(qa_chain, question):
+                # LangChain's create_retrieval_chain supports .stream(), which
+                # yields partial dicts as the chain progresses (retrieval step,
+                # then token-by-token generation). We only want the "answer"
+                # key's tokens, which show up once generation starts.
+                try:
+                    for chunk in qa_chain.stream({"input": question}):
+                        token = chunk.get("answer")
+                        if token:
+                            yield token
+                except Exception as e:
+                    yield f"Something went wrong while answering: {e}"
+ 
+            with st.chat_message("assistant"):
+                answer = st.write_stream(
+                    stream_rag_answer(st.session_state.qa_chain, question_text)
+                )
+ 
             st.session_state.messages.append({"role": "assistant", "content": answer})
  
     st.rerun()
