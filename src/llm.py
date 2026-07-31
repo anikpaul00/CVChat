@@ -4,7 +4,7 @@ import streamlit as st
 def get_llm():
     
     llm = ChatGroq(
-        model="llama-3.1-8b-instant",
+        model="qwen/qwen3.6-27b", # can also use llama-3.1-8b-instant, openai/gpt-oss-20b
         temperature=0.1,
         api_key=st.secrets["GROQ_API_KEY"]
     )
