@@ -12,7 +12,8 @@ def create_rag_chain(retriever, llm):
         1. Grounding: Use ONLY the provided Context. Do not speculate.
         2. Missing Info: If missing, reply strictly: "The requested information is unavailable in the provided context."
         3. Single Sentence: If the answer fits in one short sentence, output ONLY that sentence (omit bullets, rating, feedback).
-
+        4. Skill Gap: Provide skill-gap analysis ONLY when explicitly requested by the user.
+        
         DEFAULT FORMAT:
         - Summary: 1–2 concise sentences.
         - Details: 2–4 factual bullet points.
