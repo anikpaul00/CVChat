@@ -1,0 +1,8 @@
+venv/
+.env
+.streamlit/secrets.toml
+__pycache__/
+*.pyc
+.vscode/
+uploaded_pdfs/
+*.pdf
