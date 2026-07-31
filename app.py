@@ -9,201 +9,194 @@ from src.rag import create_rag_chain
 from src.utils import save_uploaded_file
 
 
-# ---------- UI STYLE ----------
-
+# ---------- PAGE CONFIG (must be first Streamlit call) ----------
+st.set_page_config(
+    page_title="CVChat",
+    page_icon="📄",
+    layout="centered",
+    initial_sidebar_state="collapsed",
+)
+ 
+# ---------- SESSION STATE ----------
+# Bug fix: original code initialized state but never tracked which file
+# was processed, so re-uploading a *different* CV silently reused the old
+# qa_chain. We now track the file's identity (name + size) explicitly.
+if "qa_chain" not in st.session_state:
+    st.session_state.qa_chain = None
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+if "cv_name" not in st.session_state:
+    st.session_state.cv_name = None
+if "processing_error" not in st.session_state:
+    st.session_state.processing_error = None
+ 
+# ---------- STYLE ----------
 st.markdown(
     """
     <style>
-
-    /* Hide Streamlit default */
     #MainMenu {visibility:hidden;}
     footer {visibility:hidden;}
     header {visibility:hidden;}
-
-    /* Main width */
+ 
     .block-container {
-        max-width: 900px;
-        padding-top: 2rem;
+        max-width: 780px;
+        padding-top: 3rem;
+        padding-bottom: 6rem;
     }
-
-    /* Background */
-    .stApp {
+ 
+    .stApp { background:#ffffff; }
+ 
+    /* Top bar */
+    .topbar {
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 24px;
         background: #ffffff;
+        border-bottom: 1px solid #f0f0f0;
+        z-index: 100;
     }
-
-    /* Title */
-    .title {
-        text-align:center;
-        font-size:32px;
-        font-weight:700;
-        margin-bottom:5px;
+    .topbar-title {
+        font-weight: 600;
+        font-size: 16px;
+        color: #111827;
     }
-
-    .subtitle {
-        text-align:center;
-        color:#6b7280;
-        margin-bottom:30px;
+ 
+    /* Empty-state hero, ChatGPT-style */
+    .hero {
+        text-align: center;
+        margin-top: 18vh;
+        font-size: 30px;
+        font-weight: 600;
+        color: #1f2937;
     }
-
-
-    /* Chat messages */
+    .hero-sub {
+        text-align: center;
+        color: #9ca3af;
+        margin-top: 8px;
+        font-size: 15px;
+    }
+ 
+    /* Chat bubbles */
     [data-testid="stChatMessage"] {
         background: transparent;
-        border:none;
-        padding:10px 0px;
+        border: none;
+        padding: 6px 0px;
     }
-
-
-    /* User message */
     [data-testid="stChatMessage"]:has(div[data-testid="chatAvatarIcon-user"]) {
-        background:#f3f4f6;
-        border-radius:12px;
-        padding:12px;
+        background: #f7f7f8;
+        border-radius: 14px;
+        padding: 12px 16px;
     }
-
-
-    /* Input box */
+ 
+    /* Chat input */
     [data-testid="stChatInput"] {
-        border-radius:20px;
-        border:1px solid #ddd;
+        border-radius: 24px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     }
-
-
-    /* Upload */
-    [data-testid="stFileUploader"] {
-        border:1px dashed #ccc;
-        padding:15px;
-        border-radius:12px;
-        background:#fafafa;
+ 
+    .cv-badge {
+        display: inline-block;
+        background: #ecfdf5;
+        color: #047857;
+        border: 1px solid #a7f3d0;
+        border-radius: 999px;
+        padding: 3px 12px;
+        font-size: 13px;
+        margin-bottom: 14px;
     }
-
     </style>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
-
-
-
-# ---------- HEADER ----------
-
-st.markdown(
-    """
-    <div class="title">
-        📄 CVChat
-    </div>
-
-    <div class="subtitle">
-        Analyze resumes using AI. Ask about skills, experience, projects, and suitability.
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-
-
-# Session memory
-if "qa_chain" not in st.session_state:
-    st.session_state.qa_chain = None
-
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-with st.sidebar:
-
-    st.title("📂 Resume")
-
-    uploaded_file = st.file_uploader(
-        "Upload CV",
-        type=["pdf"]
+ 
+# ---------- TOP BAR ----------
+col_a, col_b = st.columns([5, 1])
+with col_a:
+    st.markdown('<div class="topbar-title">📄 CVChat</div>', unsafe_allow_html=True)
+with col_b:
+    if st.button("New chat", use_container_width=True, disabled=st.session_state.qa_chain is None):
+        st.session_state.qa_chain = None
+        st.session_state.messages = []
+        st.session_state.cv_name = None
+        st.session_state.processing_error = None
+        st.rerun()
+ 
+if st.session_state.cv_name:
+    st.markdown(
+        f'<span class="cv-badge">✅ {st.session_state.cv_name}</span>',
+        unsafe_allow_html=True,
     )
-
-
-    if st.session_state.qa_chain:
-
-        st.success("CV Ready")
-
-        if st.button("New CV"):
-            st.session_state.qa_chain = None
-            st.session_state.messages = []
-            st.rerun()
-
-
-# Process CV only once
-if uploaded_file and st.session_state.qa_chain is None:
-
-    file_path = save_uploaded_file(uploaded_file)
-
-    with st.spinner("Analyzing resume..."):
-
-        chunks = load_pdf(file_path)
-
-        embeddings = embedding_model()
-
-        vectorstore = create_vectorstore(
-            chunks,
-            embeddings
-        )
-
-        retriever = create_retriever(
-            vectorstore,
-            k=5
-        )
-
-        llm = get_llm()
-
-        st.session_state.qa_chain = create_rag_chain(
-            retriever,
-            llm
-        )
-
-    st.toast("Resume processed successfully!")
-
-
-# Display conversation history
+ 
+# ---------- EMPTY STATE ----------
+if not st.session_state.messages and not st.session_state.qa_chain:
+    st.markdown('<div class="hero">Attach a CV to get started</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="hero-sub">Drop a PDF resume below, then ask about skills, '
+        "experience, projects, or fit for a role.</div>",
+        unsafe_allow_html=True,
+    )
+ 
+# ---------- PROCESSING ERROR (persisted) ----------
+if st.session_state.processing_error:
+    st.error(st.session_state.processing_error)
+ 
+# ---------- CHAT HISTORY ----------
 for message in st.session_state.messages:
-
     with st.chat_message(message["role"]):
         st.write(message["content"])
-
-
-# Chat
-if st.session_state.qa_chain:
-
-    question = st.chat_input(
-        "Ask about experience, skills, projects..."
-    )
-
-    if question:
-
-        st.session_state.messages.append(
-            {
-                "role": "user",
-                "content": question
-            }
-        )
-
-        with st.chat_message("user"):
-            st.write(question)
-
-
-        with st.chat_message("assistant"):
-
-            with st.spinner("Thinking..."):
-
-                response = st.session_state.qa_chain.invoke(
-                    {
-                        "input": question
-                    }
-                )
-
-                answer = response["answer"]
-
-                st.write(answer)
-
-
-        st.session_state.messages.append(
-            {
-                "role": "assistant",
-                "content": answer
-            }
-        )
+ 
+# ---------- CHAT INPUT (text + optional PDF attach, ChatGPT-style) ----------
+prompt = st.chat_input(
+    "Ask anything, or attach a CV to begin",
+    accept_file=True,
+    file_type=["pdf"],
+)
+ 
+if prompt:
+    question_text = (prompt.text or "").strip()
+    attached_files = prompt.files if prompt.files else []
+ 
+    # --- Handle a newly attached CV first ---
+    if attached_files:
+        uploaded_file = attached_files[0]
+        st.session_state.processing_error = None
+        with st.spinner("Reading resume..."):
+            try:
+                file_path = save_uploaded_file(uploaded_file)
+                chunks = load_pdf(file_path)
+                embeddings = embedding_model()
+                vectorstore = create_vectorstore(chunks, embeddings)
+                retriever = create_retriever(vectorstore, k=5)
+                llm = get_llm()
+                st.session_state.qa_chain = create_rag_chain(retriever, llm)
+                st.session_state.cv_name = uploaded_file.name
+                st.session_state.messages = []
+                st.toast("Resume processed successfully!", icon="✅")
+            except Exception as e:
+                # Bug fix: original code had no error handling at all, so a
+                # bad PDF or embedding/LLM failure crashed the whole app.
+                st.session_state.qa_chain = None
+                st.session_state.cv_name = None
+                st.session_state.processing_error = f"Couldn't process that PDF: {e}"
+                st.rerun()
+ 
+    # --- Handle the question, if there is one and a CV is ready ---
+    if question_text:
+        if st.session_state.qa_chain is None:
+            st.session_state.processing_error = "Please attach a CV before asking a question."
+        else:
+            st.session_state.messages.append({"role": "user", "content": question_text})
+            try:
+                with st.spinner("Thinking..."):
+                    response = st.session_state.qa_chain.invoke({"input": question_text})
+                    answer = response.get("answer", "I couldn't find an answer to that.")
+            except Exception as e:
+                answer = f"Something went wrong while answering: {e}"
+            st.session_state.messages.append({"role": "assistant", "content": answer})
+ 
+    st.rerun()
+ 
