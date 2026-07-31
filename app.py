@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import time
 
 from src.pdf_loader import load_pdf
 from src.embeddings import embedding_model
@@ -198,11 +199,15 @@ if prompt:
                 # yields partial dicts as the chain progresses (retrieval step,
                 # then token-by-token generation). We only want the "answer"
                 # key's tokens, which show up once generation starts.
+                # The tiny sleep is purely cosmetic — Groq is fast enough that
+                # tokens can arrive almost all at once, so this slows the
+                # visual reveal down to a more ChatGPT-like typing pace.
                 try:
                     for chunk in qa_chain.stream({"input": question}):
                         token = chunk.get("answer")
                         if token:
                             yield token
+                            time.sleep(0.02)
                 except Exception as e:
                     yield f"Something went wrong while answering: {e}"
  
@@ -214,4 +219,3 @@ if prompt:
             st.session_state.messages.append({"role": "assistant", "content": answer})
  
     st.rerun()
- 
