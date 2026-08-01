@@ -1,4 +1,5 @@
 from langchain_groq import ChatGroq
+import streamlit as st
 
 summarizer = ChatGroq(
         model="llama-3.1-8b-instant", # can also use llama-3.1-8b-instant, openai/gpt-oss-20b, qwen/qwen3.6-27b
