@@ -20,15 +20,21 @@ st.set_page_config(
 )
  
 # ---------- SESSION STATE ----------
-# Bug fix: original code initialized state but never tracked which file
-# was processed, so re-uploading a *different* CV silently reused the old
-# qa_chain. We now track the file's identity (name + size) explicitly.
 if "qa_chain" not in st.session_state:
     st.session_state.qa_chain = None
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
+
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+
+if "chat_summary" not in st.session_state:
+    st.session_state.chat_summary = ""
+
 if "cv_name" not in st.session_state:
     st.session_state.cv_name = None
+
 if "processing_error" not in st.session_state:
     st.session_state.processing_error = None
  
@@ -123,6 +129,8 @@ with col_b:
     if st.button("New chat", use_container_width=True, disabled=st.session_state.qa_chain is None):
         st.session_state.qa_chain = None
         st.session_state.messages = []
+        st.session_state.chat_history = []
+        st.session_state.chat_summary = ""
         st.session_state.cv_name = None
         st.session_state.processing_error = None
         st.rerun()
@@ -191,24 +199,28 @@ if prompt:
         if st.session_state.qa_chain is None:
             st.session_state.processing_error = "Please attach a CV before asking a question."
         else:
-            st.session_state.messages.append({"role": "user", "content": question_text})
+            # st.session_state.messages.append({"role": "user", "content": question_text})
+            st.session_state.messages.append({"role": "assistant", "content": answer})
+            st.session_state.chat_history.append({"user": question_text, "assistant:", answer})
+            recent_history = st.session_state.chat_history[-3:]
+            st.session_state.chat_summary = update_chat_summary(recent_history, summarizer)
+            
             with st.chat_message("user"):
                 st.write(question_text)
  
             def stream_rag_answer(qa_chain, question):
-                # LangChain's create_retrieval_chain supports .stream(), which
-                # yields partial dicts as the chain progresses (retrieval step,
-                # then token-by-token generation). We only want the "answer"
-                # key's tokens, which show up once generation starts.
-                # The tiny sleep is purely cosmetic — Groq is fast enough that
-                # tokens can arrive almost all at once, so this slows the
-                # visual reveal down to a more ChatGPT-like typing pace.
                 try:
-                    for chunk in qa_chain.stream({"input": question}):
+                    for chunk in qa_chain.stream(
+                        {
+                            "input": question,
+                            "chat_summary": st.session_state.chat_summary
+                        }
+                    ):
                         token = chunk.get("answer")
                         if token:
                             yield token
                             time.sleep(0.02)
+            
                 except Exception as e:
                     yield f"Something went wrong while answering: {e}"
  
