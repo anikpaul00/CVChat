@@ -199,15 +199,10 @@ if prompt:
         if st.session_state.qa_chain is None:
             st.session_state.processing_error = "Please attach a CV before asking a question."
         else:
-            # st.session_state.messages.append({"role": "user", "content": question_text})
-            st.session_state.messages.append({"role": "assistant", "content": answer})
-            st.session_state.chat_history.append({"user": question_text, "assistant:", answer})
-            recent_history = st.session_state.chat_history[-3:]
-            st.session_state.chat_summary = update_chat_summary(recent_history, summarizer)
-            
+            st.session_state.messages.append({"role": "user", "content": question_text})
             with st.chat_message("user"):
                 st.write(question_text)
- 
+
             def stream_rag_answer(qa_chain, question):
                 try:
                     for chunk in qa_chain.stream(
@@ -220,15 +215,19 @@ if prompt:
                         if token:
                             yield token
                             time.sleep(0.02)
-            
+
                 except Exception as e:
                     yield f"Something went wrong while answering: {e}"
- 
+
             with st.chat_message("assistant"):
                 answer = st.write_stream(
                     stream_rag_answer(st.session_state.qa_chain, question_text)
                 )
- 
+
             st.session_state.messages.append({"role": "assistant", "content": answer})
+            st.session_state.chat_history.append({"user": question_text, "assistant": answer})
+
+            recent_history = st.session_state.chat_history[-3:]
+            st.session_state.chat_summary = update_chat_summary(recent_history, summarizer)
  
     st.rerun()
