@@ -7,7 +7,7 @@ def get_llm():
         model="qwen/qwen3.6-27b", # can also use llama-3.1-8b-instant, openai/gpt-oss-20b, qwen/qwen3.6-27b
         max_completion_tokens=1024,
         reasoning_format="hidden",
-        reasoning_effort="low", # can degrade performance
+        reasoning_effort="default", # can degrade performance
         temperature=0.2,
         stream=True,
         api_key=st.secrets["GROQ_API_KEY"]
