@@ -2,9 +2,8 @@ from langchain_groq import ChatGroq
 
 summarizer = ChatGroq(
         model="llama-3.1-8b-instant", # can also use llama-3.1-8b-instant, openai/gpt-oss-20b, qwen/qwen3.6-27b
-        max_completion_tokens=2048,
+        max_completion_tokens=600,
         temperature=0.4,
-        stream=True,
         api_key=st.secrets["GROQ_API_KEY"]
     )
 
