@@ -10,7 +10,7 @@ def create_vectorstore(chunks, embeddings):
     return vectorstore
 
 
-def create_retriever(vectorstore, k=5):
+def create_retriever(vectorstore, k):
     
     retriever = vectorstore.as_retriever(
         search_kwargs={"k": k}
