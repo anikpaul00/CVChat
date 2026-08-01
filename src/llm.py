@@ -4,7 +4,7 @@ import streamlit as st
 def get_llm():
     
     llm = ChatGroq(
-        model="openai/gpt-oss-20b", # can also use llama-3.1-8b-instant, openai/gpt-oss-20b, qwen/qwen3.6-27b
+        model="qwen/qwen3.6-27b", # can also use llama-3.1-8b-instant, openai/gpt-oss-20b, qwen/qwen3.6-27b
         max_completion_tokens=1024,
         reasoning_format="hidden",
         reasoning_effort="low", # can degrade performance
