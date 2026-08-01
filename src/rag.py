@@ -10,7 +10,7 @@ def create_rag_chain(retriever, llm):
 
         RULES:
         1. Grounding: Use ONLY the provided Context. Do not speculate.
-        2. Context Usage: Answer using the retrieved context as your primary source. Based on the retrieved context, give the best possible answer.
+        2. Missing Info: If missing, reply strictly: "The requested information is unavailable in the provided context."
         3. Single Sentence: If the answer fits in one short sentence, output ONLY that sentence (omit bullets, rating, feedback).
         4. Skill Gap: Provide skill-gap analysis ONLY when explicitly requested by the user.
         
