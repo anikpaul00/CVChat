@@ -8,6 +8,7 @@ from src.vectorstore import create_vectorstore, create_retriever
 from src.llm import get_llm
 from src.rag import create_rag_chain
 from src.utils import save_uploaded_file
+from memory import update_chat_summary, summarizer
 
 
 # ---------- PAGE CONFIG (must be first Streamlit call) ----------
