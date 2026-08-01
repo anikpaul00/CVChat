@@ -7,7 +7,7 @@ CVChat is an AI-powered Retrieval-Augmented Generation (RAG) application that al
 * *Does the candidate have machine learning experience?*
 * *What projects has the candidate completed?*
 
-The system retrieves only the most relevant sections from the uploaded CV and generates accurate, context-aware responses using a Large Language Model (LLM).
+The system retrieves only the most relevant sections from the uploaded CV and generates near accurate, context-aware responses using a Large Language Model (LLM).
 
 ---
 
@@ -52,10 +52,10 @@ The system retrieves only the most relevant sections from the uploaded CV and ge
       Similarity Search (Top-k)
                   │
                   ▼
-     Retrieved Context + Chat History
+     Retrieved Context + Chat History (summarized previous chat using llama-3.1-8b-instant)
                   │
                   ▼
-      Llama 3.1 (Groq API)
+      openai/gpt-oss-20b (Groq API)
                   │
                   ▼
           Streaming Response
@@ -67,7 +67,7 @@ The system retrieves only the most relevant sections from the uploaded CV and ge
 
 ### Frontend
 
-* Streamlit
+* Streamlit (mostly vibecoding)
 
 ### Backend
 
@@ -77,7 +77,11 @@ The system retrieves only the most relevant sections from the uploaded CV and ge
 
 * LangChain
 * Groq API
-* Llama 3.1 8B Instant
+* Llama 3.1 8B Instant and openai/gpt-oss-20b
+
+### Model Setup
+
+* Llama 3.1 8B Instant and openai/gpt-oss-20b (dual model) setup to save tokens.
 
 ### Vector Database
 
@@ -89,7 +93,7 @@ The system retrieves only the most relevant sections from the uploaded CV and ge
 
 ### PDF Processing
 
-* PyPDF
+* pymupdf4llm
 
 ---
 
@@ -101,19 +105,11 @@ CVChat/
 ├── app.py
 ├── llm.py
 ├── rag.py
+├── memory.py
 ├── prompt.py
 ├── utils.py
 ├── requirements.txt
 ├── README.md
-│
-├── uploaded_files/
-│
-├── vector_store/
-│
-├── assets/
-│
-└── .streamlit/
-    └── secrets.toml
 ```
 
 ---
@@ -156,16 +152,6 @@ pip install -r requirements.txt
 
 ---
 
-# 🔑 Environment Variables
-
-Create a `.streamlit/secrets.toml` file.
-
-```toml
-GROQ_API_KEY="your_api_key_here"
-```
-
----
-
 # ▶ Running the Application
 
 ```bash
@@ -184,10 +170,11 @@ The application will open in your default browser.
 4. Each chunk is converted into embeddings.
 5. Embeddings are stored in a FAISS vector database.
 6. When a question is asked:
-
+  
    * Relevant chunks are retrieved using semantic similarity.
-   * Conversation summary is included to maintain context.
-   * The retrieved information and user query are passed to the LLM.
+   * Summary of three previous answers. 
+   * This conversation summary is included to maintain context.
+   * The complete information and user query are passed to the main LLM.
 7. The model generates a streamed response grounded only in the uploaded CV.
 
 ---
@@ -208,28 +195,16 @@ The system prompt is designed to:
 
 * Support multiple uploaded CVs
 * Candidate comparison
-* Resume ranking
-* Voice-based interaction
 * OCR support for scanned PDFs
 * Multi-language CV support
 * Docker deployment
-* Authentication and user accounts
 * Cloud vector database integration
 
 ---
 
 # 📸 Demo
 
-You can add screenshots or a GIF of the application here.
-
-Example:
-
-```text
-assets/
-├── home.png
-├── upload.png
-└── chat.png
-```
+(https://cvchat-ljykw9dfwzfiqvs4bcqma2.streamlit.app/)
 
 ---
 
@@ -243,7 +218,7 @@ Major libraries used:
 * langchain-groq
 * faiss-cpu
 * sentence-transformers
-* pypdf
+* pymupdf4llm
 
 Install all dependencies with:
 
@@ -271,4 +246,4 @@ This project is licensed under the MIT License.
 
 **Anik Paul**
 
-Artificial Intelligence • Machine Learning • Antenna Engineering
+Artificial Intelligence • Machine Learning
