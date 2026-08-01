@@ -8,7 +8,7 @@ def get_llm():
         max_completion_tokens=1024,
         reasoning_format="hidden",
         reasoning_effort="medium", # can degrade performance
-        temperature=0.2,
+        temperature=0.3,
         stream=True,
         api_key=st.secrets["GROQ_API_KEY"]
     )
