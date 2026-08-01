@@ -1,3 +1,5 @@
+from langchain_groq import ChatGroq
+
 def update_chat_summary(history, llm):
 
     prompt = f"""
