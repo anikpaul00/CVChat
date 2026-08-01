@@ -180,7 +180,7 @@ if prompt:
                 chunks = load_pdf(file_path)
                 embeddings = embedding_model()
                 vectorstore = create_vectorstore(chunks, embeddings)
-                retriever = create_retriever(vectorstore, k=3) # can tune it for less or more context
+                retriever = create_retriever(vectorstore, k=5) # can tune it for less or more context
                 llm = get_llm()
                 st.session_state.qa_chain = create_rag_chain(retriever, llm)
                 st.session_state.cv_name = uploaded_file.name
