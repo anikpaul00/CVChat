@@ -213,7 +213,7 @@ if prompt:
                     for chunk in qa_chain.stream(
                         {
                             "input": question,
-                            "chat_summary": st.session_state.chat_summary
+                            "chat_summary": st.session_state.get("chat_summary", "")
                         }
                     ):
                         token = chunk.get("answer")
